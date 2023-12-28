@@ -22,6 +22,10 @@ try
     var specificPost = await client.Posts[specificPostId].GetAsync();
     Console.WriteLine($"Retrieved post - ID: {specificPost?.Id}, Title: {specificPost?.Title}, Body: {specificPost?.Body}");
 
+    // specificPostId = 101;
+    // specificPost = await client.Posts[specificPostId].GetAsync();
+    // Console.WriteLine($"Retrieved post - ID: {specificPost?.Id}, Title: {specificPost?.Title}, Body: {specificPost?.Body}");
+
     // POST /posts
     var newPost = new Post
     {
