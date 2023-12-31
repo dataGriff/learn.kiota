@@ -4,41 +4,45 @@ using Marvel.Client;
 using Microsoft.Kiota.Abstractions.Authentication;
 using Microsoft.Kiota.Http.HttpClientLibrary;
 
+    string publicApiKey = "";
+    string privateApiKey = "";
+
 
 // API requires no authentication, so use the anonymous
 // authentication provider
-// var authProvider = new AnonymousAuthenticationProvider();
-// // Create request adapter using the HttpClient-based implementation
-// var adapter = new HttpClientRequestAdapter(authProvider);
-// // Create the API client
-// var client = new MarvelClient(adapter);
+var authProvider = new CustomAuthProvider(publicApiKey,privateApiKey);
+// Create request adapter using the HttpClient-based implementation
+var adapter = new HttpClientRequestAdapter(authProvider);
+// Create the API client
+var client = new MarvelClient(adapter);
 
-        string _publicApiKey = "";
-        string _privateApiKey = "";
+  
         using var md5 = MD5.Create();
         string timestamp = DateTime.Now.Ticks.ToString();
-        var data = Encoding.UTF8.GetBytes(timestamp + _privateApiKey + _publicApiKey);
+        var data = Encoding.UTF8.GetBytes(timestamp + privateApiKey + publicApiKey);
         var hashedKey = md5.ComputeHash(data);
         var hashedKeyString = BitConverter.ToString(hashedKey).Replace("-", "").ToLower();
 
-        var client = new HttpClient();
-        var request = new HttpRequestMessage(HttpMethod.Get, $"https://gateway.marvel.com:443/v1/public/characters?apikey={_publicApiKey}&hash={hashedKeyString}&ts={timestamp}&nameStartsWith=spider&limit=10");
+        var notclient = new HttpClient();
+        var request = new HttpRequestMessage(HttpMethod.Get, $"https://gateway.marvel.com:443/v1/public/characters?apikey={publicApiKey}&hash={hashedKeyString}&ts={timestamp}&nameStartsWith=spider&limit=10");
         
 
 try
 {
-    // GET /posts
-    // var allCharacters = await client.Characters.GetAsync();
-    // Console.WriteLine($"{allCharacters}");
-
     Console.WriteLine(request);
 
 
     var content = new StringContent("", null, "text/plain");
     request.Content = content;
-    var response = await client.SendAsync(request);
+    var response = await notclient.SendAsync(request);
     response.EnsureSuccessStatusCode();
     Console.WriteLine(await response.Content.ReadAsStringAsync());
+
+    Console.WriteLine("Finished not using client.");
+
+        // GET /posts
+    // var allCharacters = await client.Characters.GetAsync();
+    // Console.WriteLine($"{allCharacters}");
 
 
     // // GET /posts/{id}
@@ -53,50 +57,31 @@ catch (Exception ex)
     Console.WriteLine(ex.StackTrace);
 }
 
-// public class CustomAuthProvider : IAuthenticationProvider
-// {
-//     private readonly string _apiKey;
+public class CustomAuthProvider : IAuthenticationProvider
+{
+    private readonly string _publicApiKey;
+    private readonly string _privateApiKey;
 
-//     public CustomAuthProvider(string apiKey)
-//     {
-//         _apiKey = apiKey;
-//     }
+    public CustomAuthProvider(string publicApiKey, string privateApiKey)
+    {
+        _publicApiKey = publicApiKey;
+        _privateApiKey = privateApiKey;
+    }
 
-//     public async Task AuthenticateRequestAsync(HttpRequestMessage request)
-//     {
-//         using var sha256 = SHA256.Create();
-//         var hashedKey = sha256.ComputeHash(Encoding.UTF8.GetBytes(_apiKey));
-//         var hashedKeyString = BitConverter.ToString(hashedKey).Replace("-", "").ToLower();
+    public async Task AuthenticateRequestAsync(HttpRequestMessage request)
+    {
+        using var md5 = MD5.Create();
+        string timestamp = DateTime.Now.Ticks.ToString();
+        var data = Encoding.UTF8.GetBytes(timestamp + privateApiKey + publicApiKey);
+        var hashedKey = md5.ComputeHash(data);
+        var hashedKeyString = BitConverter.ToString(hashedKey).Replace("-", "").ToLower();
 
-//         request.Headers.Add("Authorization", $"Bearer {hashedKeyString}");
-//     }
-// }
-
-// public class CustomAuthProvider : IAuthenticationProvider
-// {
-//     private readonly string _publicApiKey;
-//     private readonly string _privateApiKey;
-
-//     public CustomAuthProvider(string publicApiKey, string privateApiKey)
-//     {
-//         _publicApiKey = publicApiKey;
-//         _privateApiKey = privateApiKey;
-//     }
-
-//     public async Task AuthenticateRequestAsync(HttpRequestMessage request)
-//     {
-//         using var md5 = MD5.Create();
-//         string timestamp = DateTime.Now.Ticks.ToString();
-//         var data = Encoding.UTF8.GetBytes(_publicApiKey + _privateApiKey + timestamp);
-//         var hashedKey = md5.ComputeHash(data);
-//         var hashedKeyString = BitConverter.ToString(hashedKey).Replace("-", "").ToLower();
-
-//         var uriBuilder = new UriBuilder(request.Uri);
-//         var query = HttpUtility.ParseQueryString(uriBuilder.Query);
-//         query["apikey"] = _publicApiKey;
-//         query["hash"] = hashedKeyString;
-//         query["timestamp"] = timestamp;
-//         uriBuilder.Query = query.ToString();
-//         request.Uri = uriBuilder.Uri;
-//     }
-// }
+        var uriBuilder = new UriBuilder(request.Uri);
+        var query = HttpUtility.ParseQueryString(uriBuilder.Query);
+        query["apikey"] = _publicApiKey;
+        query["hash"] = hashedKeyString;
+        query["timestamp"] = timestamp;
+        uriBuilder.Query = query.ToString();
+        request.Uri = uriBuilder.Uri;
+    }
+}
